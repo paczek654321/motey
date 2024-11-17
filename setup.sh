@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir logs
+
 # Python enviroment
 virtualenv .venv
 source .venv/bin/activate
