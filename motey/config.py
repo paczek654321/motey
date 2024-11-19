@@ -57,3 +57,6 @@ class Config:
 
     # BOT
     token = os.getenv("BOT_TOKEN")
+
+    #MODERATION
+    instance_owner_discord_id = os.getenv("INSTANCE_OWNER_DISCORD_ID")

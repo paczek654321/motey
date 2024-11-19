@@ -7,6 +7,7 @@ from motey.api.endpoints import (
     get_csrf_token,
     process_oauth,
     process_upload,
+    process_add_admin,
 )
 
 
@@ -17,3 +18,4 @@ def setup_routes(app: Application, config: Config = Config()) -> None:
 
     app.router.add_post("/api/v1/process_upload", process_upload)
     app.router.add_get("/api/v1/process_oauth", process_oauth)
+    app.router.add_post("/api/v1/process_add_admin", process_add_admin)

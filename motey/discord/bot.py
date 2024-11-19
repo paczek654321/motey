@@ -17,11 +17,12 @@ def main():
     tree = app_commands.CommandTree(client)
     emotes = EmoteStorage(get_db())
 
-    async def is_admin(interaction: discord.Interaction) -> bool:
+    async def is_instance_admin(interaction: discord.Interaction) -> bool:
         with Session(get_db()) as db_session:
             stmt = select(User).where(User.discord_id == interaction.user.id)
             author = db_session.scalars(stmt).one()
-            result = interaction.guild.id in author.admin_servers
+            print("\n\n\n", dir(author), "\n\n\n")
+            result = author.admin
             if not result: await interaction.response.send_message("You are not an administrator.")
             return result
 
@@ -102,6 +103,7 @@ def main():
 
     @tree.command(name="add_emote", description="Add a new emote.")
     @app_commands.check(is_not_banned)
+    @app_commands.check(is_instance_admin)
     async def add_emote(interaction: discord.Interaction, emote_name: str, image: discord.Attachment):
         if not emote_name or not image:
             await interaction.response.send_message("Failed to add the emote, missing name or file.")
@@ -127,7 +129,7 @@ def main():
         await interaction.response.send_message(f"Emote **{emote_name}** added successfuly!")
 
     @tree.command(name="sync_slash_commands", description="Synchronize the bots slash commands.")
-    @app_commands.check(is_admin)
+    @app_commands.check(is_instance_admin)
     async def sync(interaction: discord.Interaction):
         await tree.sync()
         await interaction.response.send_message("Slash commands synchronized.")
