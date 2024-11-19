@@ -165,3 +165,24 @@ async def process_oauth(request: web.Request):
                     db_session.commit()
 
     raise web.HTTPFound(location="/")
+
+async def process_add_admin(request: web.Request):
+    data = await request.post()
+    is_admin = data["discord_id"] == Config.instance_owner_discord_id
+    with Session(get_db()) as db_session:
+        stmt = select(User).where(User.discord_id == data["discord_id"])
+        author = db_session.scalars(stmt).one()
+        is_admin = is_admin or interaction.guild.id in author.admin_servers
+        if not is_admin: return web.json_response({"error_message": "You do not have permission to do that"})
+
+        stmt = (
+            update(User)
+            .where(User.discord_id == data["discord_id"])
+            .values(admin=True)
+            )
+        db_session.execute(stmt)
+        db_session.commit()
+
+    
+
+    return web.json_response({"error_message": "Success"})

@@ -33,9 +33,6 @@ def create_association_table(name: str, column1: str, column2: str) -> Table:
 users_servers_association_table = create_association_table(
     "users_servers_association_table", "server", "user"
 )
-admins_servers_association_table = create_association_table(
-    "admins_servers_association_table", "server", "user"
-)
 emotes_servers_association_table = create_association_table(
     "emotes_servers_association_table", "server", "emote"
 )
@@ -51,10 +48,6 @@ class Server(Base):
         back_populates="user_servers", secondary=users_servers_association_table
     )
 
-    server_admins: Mapped[List["User"]] = relationship(
-        back_populates="admin_servers", secondary=admins_servers_association_table
-    )
-
     server_emotes: Mapped[List["Emote"]] = relationship(
         back_populates="emote_servers", secondary=emotes_servers_association_table
     )
@@ -68,13 +61,10 @@ class User(Base):
     user_emotes: Mapped[Optional[List["Emote"]]] = relationship(back_populates="author")
     replace: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     user_servers: Mapped[Optional[List["Server"]]] = relationship(
         back_populates="server_users", secondary=users_servers_association_table
-    )
-
-    admin_servers: Mapped[Optional[List["Server"]]] = relationship(
-        back_populates="server_admins", secondary=admins_servers_association_table
     )
 
 
