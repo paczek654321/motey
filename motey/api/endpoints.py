@@ -5,7 +5,7 @@ from aiohttp import web
 import aiohttp_session
 import aiohttp_csrf
 
-from sqlalchemy import select, exists
+from sqlalchemy import select, exists, update
 from sqlalchemy.orm import Session
 
 from motey.database.storage import EmoteStorage, UserStorage
@@ -133,51 +133,55 @@ async def process_oauth(request: web.Request):
         if not db_session.query(
             exists().where(User.discord_id == session["discord_id"])
         ).scalar():
-
             user = User(discord_id=session["discord_id"], name=user_data["global_name"])
             db_session.add(user)
             db_session.commit()
+        else:
+            stmt = select(User).where(User.discord_id == session["discord_id"])
+            user = db_session.scalars(stmt).one()
 
         for guild in guilds:
             guild_id = int(guild["id"])
             guild_name = guild["name"]
 
-            stmt = select(Server).where(Server.guild == guild_id)
-            server = db_session.scalars(stmt).one()
-
-            if server is None:
+            if not db_session.query(
+                exists().where(Server.guild == guild_id)
+            ).scalar():
                 server = Server(guild=guild_id, name=guild_name)
                 server.server_users.append(user)
                 db_session.add(server)
                 db_session.commit()
             else:
-                if not db_session.query(
-                    exists().where(
-                        Server.guild == guild_id,
-                        Server.server_users.any(discord_id=session["discord_id"]),
-                        )
-                    ).scalar():
-                        server.server_users.append(user)
-                        db_session.commit()
-
-                if server.name != guild_name:
-                    server.name = guild_name
+                stmt = select(Server).where(Server.guild == guild_id)
+                server = db_session.scalars(stmt).one()
+            
+            if not db_session.query(
+                exists().where(
+                    Server.guild == guild_id,
+                    Server.server_users.any(discord_id=session["discord_id"]),
+                    )
+                ).scalar():
+                    server.server_users.append(user)
                     db_session.commit()
+
+            if server.name != guild_name:
+                server.name = guild_name
+                db_session.commit()
 
     raise web.HTTPFound(location="/")
 
 async def process_add_admin(request: web.Request):
     data = await request.post()
     is_admin = data["discord_id"] == Config.instance_owner_discord_id
-    with Session(get_db()) as db_session:
+    with Session(request.app["db"]) as db_session:
         stmt = select(User).where(User.discord_id == data["discord_id"])
         author = db_session.scalars(stmt).one()
-        is_admin = is_admin or interaction.guild.id in author.admin_servers
+        is_admin = author.admin
         if not is_admin: return web.json_response({"error_message": "You do not have permission to do that"})
 
         stmt = (
             update(User)
-            .where(User.discord_id == data["discord_id"])
+            .where(User.discord_id == data["target_discord_id"])
             .values(admin=True)
             )
         db_session.execute(stmt)
