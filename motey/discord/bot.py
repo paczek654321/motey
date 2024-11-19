@@ -18,6 +18,7 @@ def main():
     emotes = EmoteStorage(get_db())
 
     async def is_instance_admin(interaction: discord.Interaction) -> bool:
+        if interaction.user.id == Config.instance_owner_discord_id: return True
         with Session(get_db()) as db_session:
             stmt = select(User).where(User.discord_id == interaction.user.id)
             author = db_session.scalars(stmt).one()
